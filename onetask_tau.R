@@ -15,8 +15,10 @@
 
 ct <- table(x$Account, x$Problem.Level)
 ct$Var2 <- paste0("l", ct$Var2) # add a prefix to all rows in R stackoverflowww
-
 spread(as_tibble(ct), Var2, n)
+# order
+
+
 
 weighted.mean() # good example section
 
