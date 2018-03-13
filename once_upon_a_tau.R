@@ -23,9 +23,30 @@ library('tidyverse')
 library('retimes')
 
 
+####### loading dougs sav
+library(foreign)
+setwd("~/Documents/doug_sav/")
+doug <- read.spss("DICOM_T3_180312.sav")
+doug <- as_tibble(doug)
+doug$uuid <- gsub(" ", "", doug$Account_training, fixed = TRUE)
+doug <- select(doug, one_of(c("uuid", "Inatt_DSM", "SDQ_Inatt_T3", "SDQ_Inatt_T2")))
+
+####### 
+
+#### temp work area for preliminary cor
+
+lets_see <- doug_leavn %>% 
+  left_join(doug, by = "uuid")
+
+sum(is.na(lets_see$Inatt_DSM))
+
+
 x <- x %>% 
-  filter(Correct==1) %>% 
-  group_by(Account,Problem.Level) %>% 
+  filter(Correct==1) #%>% 
+  
+
+
+group_by(Account,Problem.Level) %>% 
   summarise(mean = mean(Response.Time), median = median(Response.Time), sd = sd(Response.Time), count = n())
 
 write_csv(x, "rt_values.csv")

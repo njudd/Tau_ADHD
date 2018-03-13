@@ -1,4 +1,4 @@
-# feed only correct data with outliers excluded
+# feed only correct data (try with all data as well) with outliers excluded
 # quite rigid to our data
 
 
@@ -16,7 +16,7 @@
 finding_lvs <- as_tibble(table(x$Account, x$Problem.Level))
 #ct$Var2 <- paste0("l_", ct$Var2) # add a prefix to all rows in R stackoverflowww
 finding_lvs <- finding_lvs %>% 
-  rename(uuid = Var1) %>% 
+  rename(uuid = Var1, lv = Var2) %>% 
   group_by(uuid) %>% 
   arrange(desc(n)) %>% 
   arrange(desc(uuid,n))
@@ -53,7 +53,48 @@ for(i in levels(finding_lvs$uuid)){
   take_me_rep <- c(take_me_rep, repn)
   num_of_trials <- c(num_of_trials, rept)
 }
+finding_lvs$take_me_rep <- as.integer(take_me_rep)
+finding_lvs$lv <- as.integer(finding_lvs$lv)
+finding_lvs$num_of_trials <- num_of_trials
 
+
+# first trim down the dataframe to the needed rows
+# might not be that easy
+
+
+### now for the real deal
+
+
+uuid <- c()
+tau_weighted <- c()
+for(i in levels(finding_lvs$uuid)){
+  g <-  df[df$Account==i,]
+  # holding vecs
+  l <- c()
+  tau_vals <- c()
+  for(p in 1:unique(finding_lvs$take_me_rep[finding_lvs$uuid==i])){
+    tau_vals <- c(tau_vals, mexgauss(g[g$Problem.Level==as.integer(finding_lvs[finding_lvs$uuid==i,][p,2]),]$Response.Time)[3])
+    l <- c(l, length(g[g$Problem.Level==as.integer(finding_lvs[finding_lvs$uuid==i,][p,2]),]$Response.Time)/unique(finding_lvs[finding_lvs$uuid==i,]$num_of_trials))
+    # for weighting you need to store the # trials so you can sum and than trials_lv1/sum to make a vec of weights
+# account name
+    # add lv? 
+    # add # trials?
+    # weighting for weighted mean?
+    
+  }
+  print(tau_vals)
+  print(l)
+  
+  uuid <- c(uuid, i)
+  tau_weighted <- c(tau_weighted, weighted.mean(tau_vals,l))
+  
+  #could do the wieghted mean part here
+  #tau_weighted <- weighted.mean(tau_vals, heavy)
+  # than
+  # make a df with uuid, lv's, #trials & weighted mean tau
+  
+  #need to loop for # lvs
+}
 
 
 
@@ -65,7 +106,16 @@ ct <- spread(as_tibble(ct), Var2, n) # if you dont spread them you can use dyplr
 weighted.mean() # good example section
 
 
+### quick & dirty
 
+doug_leavn <- cbind(uuid, tau_weighted)
+doug_leavn <- as_tibble(doug_leavn)
+
+doug_leavn$tau_weighted <- round(as.numeric(doug_leavn$tau_weighted))
+
+write_csv(doug_leavn, "temp_weightedtau.csv")
+
+apply(doug_leavn$tau_weighted, 2, gsub, patt=",", replace=".")
 
 ### staging area
 
