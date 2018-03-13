@@ -1,33 +1,30 @@
 # feed only correct data (try with all data as well) with outliers excluded
 # quite rigid to our data
-
-
-#### NOTES ####
 #cut outliers <100000 (must be a glitch)
-## be carefull, the distributions aren't ex-gaussian** 
-# check other tasks, make a lm controlling for lv? or somehow get rid of lv
 # have reasonable cutoff's 
-# take the 2 most frequent lv's of a sub
-# get tau for each lv
-# make a weighted average, might as well also output the amount of trials (as a confidence measure)
-# if more than 100 trials, take it, also output # of levels
-# if the last (2nd most freq has the same # trials as 3rd most freq take both)
 
-finding_lvs <- as_tibble(table(x$Account, x$Problem.Level))
-#ct$Var2 <- paste0("l_", ct$Var2) # add a prefix to all rows in R stackoverflowww
+#### what is does:
+# takes the 2 most frequent lv's of an account (or >2 if they have multiple lvs with over 100 observations)
+# get tau for each lv
+# make a weighted average
+# outputs a tibble with: uuid, weighted_tau, sum of trials and number of lvs used!
+
+
+onetask_tau <- function(df){
+
+
+finding_lvs <- as_tibble(table(df$Account, df$Problem.Level))
 finding_lvs <- finding_lvs %>% 
   rename(uuid = Var1, lv = Var2) %>% 
   group_by(uuid) %>% 
   arrange(desc(n)) %>% 
   arrange(desc(uuid,n))
 
-#need a lil loop which decides how many lvs to take from each account and rep's that in another col
 
-finding_lvs$uuid <- as_factor(finding_lvs$uuid)
-
+#need a loop which decides how many lvs to take from each account and rep's that in another col
+finding_lvs$uuid <- as_factor(finding_lvs$uuid) # making accounts as a factor to use in loop
 take_me_rep <- c()
 num_of_trials <- c()
-
 for(i in levels(finding_lvs$uuid)){
   g <-  finding_lvs[finding_lvs$uuid==i,]
   counter <- 2
@@ -90,31 +87,22 @@ for(i in levels(finding_lvs$uuid)){
   n_trials <- c(n_trials, unique(finding_lvs[finding_lvs$uuid==i,]$num_of_trials))
   n_lvs <- c(n_lvs, length(tau_vals))
 }
-
-
-
-
-
 out <- as_tibble(cbind(uuid, tau_weighted, n_trials, n_lvs))
 return(out)
-
+}
 
 
 ### quick & dirty
 
-doug_leavn <- cbind(uuid, tau_weighted)
-doug_leavn <- as_tibble(doug_leavn)
+#doug_leavn <- cbind(uuid, tau_weighted)
+#doug_leavn <- as_tibble(doug_leavn)
 
-doug_leavn$tau_weighted <- round(as.numeric(doug_leavn$tau_weighted))
+#doug_leavn$tau_weighted <- round(as.numeric(doug_leavn$tau_weighted))
 
-write_csv(doug_leavn, "temp_weightedtau.csv")
+#write_csv(doug_leavn, "temp_weightedtau.csv")
 
-apply(doug_leavn$tau_weighted, 2, gsub, patt=",", replace=".")
+#apply(doug_leavn$tau_weighted, 2, gsub, patt=",", replace=".")
 
-### staging area
 
-onetask_tau <- function(df){
-  
-  
-  return()
-}
+
+
