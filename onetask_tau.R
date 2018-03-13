@@ -13,9 +13,35 @@
 # if more than 100 trials, take it, also output # of levels
 # if the last (2nd most freq has the same # trials as 3rd most freq take both)
 
-ct <- table(x$Account, x$Problem.Level)
-ct$Var2 <- paste0("l", ct$Var2) # add a prefix to all rows in R stackoverflowww
-spread(as_tibble(ct), Var2, n)
+finding_lvs <- as_tibble(table(x$Account, x$Problem.Level))
+#ct$Var2 <- paste0("l_", ct$Var2) # add a prefix to all rows in R stackoverflowww
+finding_lvs <- finding_lvs %>% 
+  rename(uuid = Var1) %>% 
+  group_by(uuid) %>% 
+  arrange(desc(n)) %>% 
+  arrange(desc(uuid,n))
+
+#need a lil loop which decides how many lvs to take from each account and rep's that in another col
+
+finding_lvs$uuid <- as_factor(finding_lvs$uuid)
+
+take_me_rep <- c()
+
+for(i in levels(finding_lvs$uuid)){
+  g <-  finding_lvs[finding_lvs$uuid==i,]
+  print(dim(g))
+  for(x in dim(g)[1]-1){ #weak loop as there's no fail safe against subs with less than 3 rows (aka lvs), not true because with the spread everyone is forced to have multiple rows
+    counter <- 1
+    if(g[x+1,3] == g[x+2,3] | g[x+2]>100)
+      counter <- counter + 1
+    else
+  }
+}
+
+
+
+
+ct <- spread(as_tibble(ct), Var2, n) # if you dont spread them you can use dyplr
 # order
 
 
