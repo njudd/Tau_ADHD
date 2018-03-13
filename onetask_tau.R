@@ -26,16 +26,30 @@ finding_lvs <- finding_lvs %>%
 finding_lvs$uuid <- as_factor(finding_lvs$uuid)
 
 take_me_rep <- c()
+num_of_trials <- c()
 
 for(i in levels(finding_lvs$uuid)){
   g <-  finding_lvs[finding_lvs$uuid==i,]
-  print(dim(g))
-  for(x in dim(g)[1]-1){ #weak loop as there's no fail safe against subs with less than 3 rows (aka lvs), not true because with the spread everyone is forced to have multiple rows
-    counter <- 1
-    if(g[x+1,3] == g[x+2,3] | g[x+2]>100)
+    for(z in 2:max(finding_lvs[,2])){ #weak loop as there's no fail safe against subs with less than 3 rows (aka lvs), not true because with the spread everyone is forced to have multiple rows
+    counter <- 2
+    if(g[z,3] == g[z+1,3] | g[z+1,3]>=100){
       counter <- counter + 1
-    else
-  }
+    }
+    else if(z==2){
+      repn <- rep(counter, dim(g)[1])
+      rept <- rep(sum(g[1:counter,3]), dim(g)[1])  # make sure to rep it
+      break
+      }
+    else{
+      repn <- rep(counter, dim(g)[1])
+      rept <- rep(sum(g[1:counter,3]), dim(g)[1])
+      break
+    }
+    take_me_rep <- c(take_me_rep, repn)
+    num_of_trials <- c(num_of_trials, rept) # need to have this out of a few loops
+    }
+  take_me_rep <- take_me_rep # rename stuff so its clearer
+  num_of_trials <- num_of_trials
 }
 
 
