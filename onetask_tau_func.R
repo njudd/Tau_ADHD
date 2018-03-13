@@ -44,8 +44,6 @@ for(i in levels(finding_lvs$uuid)){
         rept <- rep(sum(g[1:counter,3]), dim(g)[1])
         break
       }
-    #take_me_rep <- c(take_me_rep, repn)
-    #num_of_trials <- c(num_of_trials, rept) # need to have this out of a few loops
     }
   take_me_rep <- c(take_me_rep, repn)
   num_of_trials <- c(num_of_trials, rept)
@@ -70,39 +68,21 @@ n_lvs <- c()
 for(i in levels(finding_lvs$uuid)){
   g <-  df[df$Account==i,]
   # holding vecs
-  l <- c()
   tau_vals <- c()
-  for(p in 1:unique(finding_lvs$take_me_rep[finding_lvs$uuid==i])){
+  l <- c()
+  for(p in 1:unique(finding_lvs$take_me_rep[finding_lvs$uuid==i])){ 
+    #looping for as many times as determined earlier (aka # of lvs with 100+ trials)
     tau_vals <- c(tau_vals, mexgauss(g[g$Problem.Level==as.integer(finding_lvs[finding_lvs$uuid==i,][p,2]),]$Response.Time)[3])
+    #this nasty line of code gets tau by subseting the df g$Response.Time (which is already subset per account) and extracts the problem lv from the ordered finding_lvs df based on how far the loop is
+    # [3] gets only tau from mexgauss function from the package library('retimes')
     l <- c(l, length(g[g$Problem.Level==as.integer(finding_lvs[finding_lvs$uuid==i,][p,2]),]$Response.Time)/unique(finding_lvs[finding_lvs$uuid==i,]$num_of_trials))
-    # for weighting you need to store the # trials so you can sum and than trials_lv1/sum to make a vec of weights
-# account name
-    # add lv? 
-    # add # trials?
-    # weighting for weighted mean?
-    
+    # this line of code, is the make a weighted vector to average later (divides by total num of trials, determined earlier by finding_lvs df)
   }
   uuid <- c(uuid, i)
-  tau_weighted <- c(tau_weighted, weighted.mean(tau_vals,l))
-  n_trials <- c(n_trials, unique(finding_lvs[finding_lvs$uuid==i,]$num_of_trials))
-  n_lvs <- c(n_lvs, length(tau_vals))
+  tau_weighted <- c(tau_weighted, weighted.mean(tau_vals,l)) # making a vector (per account) of weighted.means
+  n_trials <- c(n_trials, unique(finding_lvs[finding_lvs$uuid==i,]$num_of_trials)) # making a vector of number of trials used per account
+  n_lvs <- c(n_lvs, length(tau_vals)) # making a vector of number of lvs used per account
 }
 out <- as_tibble(cbind(uuid, tau_weighted, n_trials, n_lvs))
 return(out)
 }
-
-
-### quick & dirty
-
-#doug_leavn <- cbind(uuid, tau_weighted)
-#doug_leavn <- as_tibble(doug_leavn)
-
-#doug_leavn$tau_weighted <- round(as.numeric(doug_leavn$tau_weighted))
-
-#write_csv(doug_leavn, "temp_weightedtau.csv")
-
-#apply(doug_leavn$tau_weighted, 2, gsub, patt=",", replace=".")
-
-
-
-
