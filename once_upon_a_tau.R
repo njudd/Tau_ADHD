@@ -14,20 +14,17 @@
 library('tidyverse')
 library('retimes')
 
-table(x$Phase.Type) # whats the difference, If i remember correctly this df is clean
-
-
 setwd("~/Dropbox/KI/Diff_project/Grid_diff")
 x <- read_csv("WMgrid_training_full_pure.csv")
 keep <-x
 
 
 
-x <- x %>% 
-  filter(Correct==1) #%>% 
+#x <- x %>% 
+#  filter(Correct==1) #%>% 
+
+
 setwd("~/Projects/R_projects/Tau_ADHD/")
-
-
 source("onetask_tau_func.R")
 tau <- onetask_tau(x)
 
@@ -99,11 +96,12 @@ sum(!is.na(doug$Inatt_DSM))
 
 #### temp work area for preliminary cor
 
-lets_see <- doug_leavn %>% 
+lets_see <- tau %>% 
   left_join(doug, by = "uuid")
 
 sum(!is.na(lets_see$Inatt_DSM))
 
+lets_see$tau_weighted <- as.numeric(lets_see$tau_weighted)
 cor.test(lets_see$tau_weighted, lets_see$Inatt_DSM, use = "pairwise.complete.obs")
 
 
@@ -119,6 +117,19 @@ cor.test(lets_see$tau_weighted, lets_see$Inatt_DSM, use = "pairwise.complete.obs
 ?ecdf
 
 ct <- rexgauss(100)
+
+ecdf(rt)[30]
+
+
+
+
+
+
+
+
+
+
+
 
 
 
