@@ -171,16 +171,63 @@ wmgrid_limited <- x %>%
   filter(Account %in% limited_subs) %>% 
   filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
   group_by(Account, Problem.Level) %>% 
-  mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
-  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) %>% 
+  mutate(n = row_number(), min_sub = n(), cutoff = median(Response.Time)+(IQR(Response.Time)/2 + 1.5*IQR(Response.Time))) # 56 is the lowest # of trials
+  
+#### bring the the fence?!?!?!?!
+  
+  mutate(Response.Time < cutoff) %>% 
+  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) 
+
+
+
+
+%>% 
   mutate(tau_l = log(tau)) %>% 
   left_join(doug, by = c("Account" = "uuid")) 
 
-#cor.test(wmgrid_limited$tau, wmgrid_limited$Problem.Level)
 
-hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3], breaks = 40)
-hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4], breaks = 40)
-hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5], breaks = 40)
+
+
+# cor.test(wmgrid_limited$tau, wmgrid_limited$Inatt_DSM)
+# outlier 
+# wmgrid_limited <- wmgrid_limited[wmgrid_limited$Account!="heyaruda",]
+
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3], breaks = 50)
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4], breaks = 50)
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5], breaks = 50)
+
+library(car)
+
+#tau LV 3
+C <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==3]
+#C <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3])
+
+par(mfrow=c(1,2))
+hist(C,  prob=T,xlab='', main='Histogram of Tau Lv 3 (Var C)')
+lines(density(C,na.rm=T))
+rug(jitter(C))
+qqPlot(C, main='Normal QQ plot of Tau Lv 3') > par(mfrow=c(1,1))
+
+#tau LV 4
+W <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==4]
+#W <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4])
+
+par(mfrow=c(1,2))
+hist(W, prob=T, xlab='', main='Histogram of Tau Lv 4 (Var W)')
+lines(density(W,na.rm=T))
+rug(jitter(W))
+qqPlot(W, main='Normal QQ plot of Tau Lv 4') > par(mfrow=c(1,1))
+
+#tau LV 5
+S <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==5]
+#S <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5])
+
+par(mfrow=c(1,2))
+hist(S,  prob=T, xlab='', main='Histogram of Tau Lv 5 (Var S)')
+lines(density(S,na.rm=T))
+rug(jitter(S))
+qqPlot(S, main='Normal QQ plot of Tau Lv 5') > par(mfrow=c(1,1))
+
 
 
 hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3]), breaks = 40)
