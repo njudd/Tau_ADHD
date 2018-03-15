@@ -43,10 +43,13 @@ ct <- ct[ct>5000]
 hist(ct, breaks = 45)
 mexgauss(ct)
 
+timefit(ct)
+
 ct <- x[x$Account=="behaputsu" & x$Problem.Level==4,]$Response.Time # lv = 5
 ct <- ct[ct>5000]
 hist(ct, breaks = 45)
 mexgauss(ct)
+
 
 ctl3 <- x[x$Account=="kigetzutsu" & x$Problem.Level==3,]$Response.Time # lv = 3-6
 ctl4 <- x[x$Account=="kigetzutsu" & x$Problem.Level==4,]$Response.Time # lv = 3-6
@@ -102,10 +105,14 @@ lets_see <- tau %>%
 sum(!is.na(lets_see$Inatt_DSM))
 
 lets_see$tau_weighted <- as.numeric(lets_see$tau_weighted)
+
 cor.test(lets_see$tau_weighted, lets_see$Inatt_DSM, use = "pairwise.complete.obs")
+cor.test(lets_see$tau_weighted, lets_see$SDQ_Inatt_T1, use = "pairwise.complete.obs")
 
 
-
+cor.test(lets_see$SDQ_Inatt_T2, lets_see$SDQ_Inatt_T1, use = "pairwise.complete.obs")
+cor.test(lets_see$SDQ_Inatt_T3, lets_see$SDQ_Inatt_T1, use = "pairwise.complete.obs")
+cor.test(lets_see$SDQ_Inatt_T2, lets_see$SDQ_Inatt_T3, use = "pairwise.complete.obs")
 
 ##### lets add a test of fit ##### 
 
@@ -131,11 +138,82 @@ ecdf(rt)[30]
 
 
 
+### try tau on the most popular lv for the 42 subs
+table(x$Problem.Level) # 4 is the most frequent
+#lets only use the 42 we need
+limited_subs <- lets_see[complete.cases(lets_see),]
+limited_subs <- limited_subs$uuid
+
+wmgrid_limited <- x %>% 
+  filter(Account %in% limited_subs & Problem.Level==4) %>% 
+  group_by(Account) %>% 
+  mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
+  filter(n <= 56)   %>% 
+  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) %>% 
+  left_join(doug, by = c("Account" = "uuid"))
+
+cor.test(wmgrid_limited$tau_m, wmgrid_limited$Inatt_DSM)
+cor.test(wmgrid_limited$tau, wmgrid_limited$mu)
+summary(lm(tau ~ Inatt_DSM + logLik + mu, wmgrid_limited))
+
+
+# do lv 3 & 5 and see if there's and effect of lv
+wmgrid_limited <- x %>% 
+  filter(Account %in% limited_subs) %>% 
+  filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
+  group_by(Account, Problem.Level) %>% 
+  summarise(tau = mexgauss(Response.Time)[3]) %>% 
+  left_join(doug, by = c("Account" = "uuid"))
+summary(lm(tau ~ Problem.Level, wmgrid_limited))
+
+
+wmgrid_limited <- x %>% 
+  filter(Account %in% limited_subs) %>% 
+  filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
+  group_by(Account, Problem.Level) %>% 
+  mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
+  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) %>% 
+  mutate(tau_l = log(tau)) %>% 
+  left_join(doug, by = c("Account" = "uuid")) 
+
+#cor.test(wmgrid_limited$tau, wmgrid_limited$Problem.Level)
+
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3], breaks = 40)
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4], breaks = 40)
+hist(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5], breaks = 40)
+
+
+hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3]), breaks = 40)
+hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4]), breaks = 40)
+hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5]), breaks = 40)
 
 
 
+tauresidi <- lm(tau ~ Problem.Level, wmgrid_limited)
+
+##### RESIDUALS SHOULD BE NORMALLY DISTRIBUTED
+tauresidi <- tau_residi$residuals
+hist(tauresidi, breaks = 30)
+# min(tauresidi)
+tauresidi <- tauresidi + 6130
+hist(tauresidi, breaks = 30)
 
 
+#tauresidi <- 1/tauresidi
+#hist(tauresidi, breaks = 30)
+
+
+tauresidi <- log(tauresidi)
+hist(tauresidi, breaks = 30)
+tauresidi <- tauresidi[tauresidi>6]
+hist(tauresidi, breaks = 30)
+
+wmgrid_limited$tau_res <- tauresidi
+
+summary(lm(tau_res ~ Inatt_DSM, wmgrid_limited))
+
+
+summary(lm(tau ~ Problem.Level, wmgrid_limited))
 
 
 
