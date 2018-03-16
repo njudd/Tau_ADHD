@@ -152,34 +152,33 @@ wmgrid_limited <- x %>%
   summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) %>% 
   left_join(doug, by = c("Account" = "uuid"))
 
-cor.test(wmgrid_limited$tau_m, wmgrid_limited$Inatt_DSM)
-cor.test(wmgrid_limited$tau, wmgrid_limited$mu)
-summary(lm(tau ~ Inatt_DSM + logLik + mu, wmgrid_limited))
+cor.test(wmgrid_limited$tau, wmgrid_limited$Inatt_DSM)
+cor.test(wmgrid_limited$mu, wmgrid_limited$Inatt_DSM)
+
+wmgrid_limited$tau <- log(wmgrid_limited$tau)
+summary(lm(tau ~ Inatt_DSM, wmgrid_limited))
 
 
 # do lv 3 & 5 and see if there's and effect of lv
-wmgrid_limited <- x %>% 
-  filter(Account %in% limited_subs) %>% 
-  filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
-  group_by(Account, Problem.Level) %>% 
-  summarise(tau = mexgauss(Response.Time)[3]) %>% 
-  left_join(doug, by = c("Account" = "uuid"))
-summary(lm(tau ~ Problem.Level, wmgrid_limited))
+#wmgrid_limited <- x %>% 
+#  filter(Account %in% limited_subs) %>% 
+ # filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
+#  group_by(Account, Problem.Level) %>% 
+ # summarise(tau = mexgauss(Response.Time)[3]) %>% 
+#  left_join(doug, by = c("Account" = "uuid"))
+#summary(lm(tau ~ Problem.Level, wmgrid_limited))
 
 
 wmgrid_limited <- x %>% 
   filter(Account %in% limited_subs) %>% 
   filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
   group_by(Account, Problem.Level) %>% 
-  mutate(n = row_number(), min_sub = n(), cutoff = median(Response.Time)+(IQR(Response.Time)/2 + 1.5*IQR(Response.Time))) # 56 is the lowest # of trials
-  
-#### bring the the fence?!?!?!?!
-  
-  mutate(Response.Time < cutoff) %>% 
-  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) 
+  mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
+  summarise(tau_m = mexgauss(Response.Time)[3] ,tau_better = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE), n_trials = n()) 
 
+write_csv(wmgrid_limited, "Tau_wmgrid_alltrials.csv")
 
-
+# , cutoff = median(Response.Time)+(IQR(Response.Time)/2 + 1.5*IQR(Response.Time))
 
 %>% 
   mutate(tau_l = log(tau)) %>% 
@@ -200,7 +199,9 @@ library(car)
 
 #tau LV 3
 C <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==3]
-#C <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3])
+boxc <- boxplot(C)
+C[C %in% boxc$out] <- boxc$stats[5]
+C <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3])
 
 par(mfrow=c(1,2))
 hist(C,  prob=T,xlab='', main='Histogram of Tau Lv 3 (Var C)')
@@ -210,7 +211,10 @@ qqPlot(C, main='Normal QQ plot of Tau Lv 3') > par(mfrow=c(1,1))
 
 #tau LV 4
 W <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==4]
-#W <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4])
+boxw <- boxplot(W)
+W[W %in% boxw$out] <- boxw$stats[5]
+
+W <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4])
 
 par(mfrow=c(1,2))
 hist(W, prob=T, xlab='', main='Histogram of Tau Lv 4 (Var W)')
@@ -220,7 +224,9 @@ qqPlot(W, main='Normal QQ plot of Tau Lv 4') > par(mfrow=c(1,1))
 
 #tau LV 5
 S <- wmgrid_limited$tau[wmgrid_limited$Problem.Level==5]
-#S <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5])
+boxs <- boxplot(S)
+S[S %in% boxs$out] <- boxs$stats[5]
+S <- log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5])
 
 par(mfrow=c(1,2))
 hist(S,  prob=T, xlab='', main='Histogram of Tau Lv 5 (Var S)')
