@@ -1,5 +1,11 @@
 #tau for WM_grid
 
+
+## interesting theory from bruno, using only cor trials and looking at amount
+#theres a positive correlation as smaller span trials (2 & 3) which becomes negative at high spans (4 & 5)
+
+
+
 #cut outliers <100000 (must be a glitch)
 ## be carefull, the distributions aren't ex-gaussian** 
 # check other tasks, make a lm controlling for lv? or somehow get rid of lv
@@ -28,7 +34,10 @@ setwd("~/Projects/R_projects/Tau_ADHD/")
 source("onetask_tau_func.R")
 tau <- onetask_tau(x)
 
-
+amount_of_t_perlv <- x %>% 
+  filter(Correct ==0) %>% 
+  group_by(Problem.Level) %>% 
+  summarise(t = n())
 
 
 
@@ -145,12 +154,18 @@ limited_subs <- lets_see[complete.cases(lets_see),]
 limited_subs <- limited_subs$uuid
 
 wmgrid_limited <- x %>% 
-  filter(Account %in% limited_subs & Problem.Level==4) %>% 
+  filter(Account %in% limited_subs & Problem.Level==4) %>% #& Correct==1
   group_by(Account) %>% 
   mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
-  filter(n <= 56)   %>% 
-  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE)) %>% 
+  #filter(n <= 56)   %>% 
+  summarise(tau_m = mexgauss(Response.Time)[3] ,tau = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE), n = unique(min_sub)) %>% 
   left_join(doug, by = c("Account" = "uuid"))
+
+cor.test(wmgrid_limited$ratio, wmgrid_limited$Inatt_DSM)
+
+summary(lm(ratio ~ Inatt_DSM, data = wmgrid_limited))
+mod1 <- mod1$residuals
+
 
 cor.test(wmgrid_limited$tau, wmgrid_limited$Inatt_DSM)
 cor.test(wmgrid_limited$mu, wmgrid_limited$Inatt_DSM)
@@ -171,7 +186,7 @@ summary(lm(tau ~ Inatt_DSM, wmgrid_limited))
 
 wmgrid_limited <- x %>% 
   filter(Account %in% limited_subs) %>% 
-  filter(Problem.Level==3 | Problem.Level==4 | Problem.Level==5) %>% 
+  filter(Problem.Level==2 | Problem.Level==3 | Problem.Level==4 | Problem.Level==5 | Problem.Level==6) %>% 
   group_by(Account, Problem.Level) %>% 
   mutate(n = row_number(), min_sub = n()) %>% # 56 is the lowest # of trials
   summarise(tau_m = mexgauss(Response.Time)[3] ,tau_better = slot(timefit(Response.Time), "par")[3], mu = slot(timefit(Response.Time), "par")[1], logLik = slot(timefit(Response.Time), "logLik") ,ratio = unique(sum(Correct, na.rm = TRUE)/min_sub), m = mean(Response.Time, na.rm = TRUE), n_trials = n()) 
@@ -183,8 +198,6 @@ write_csv(wmgrid_limited, "Tau_wmgrid_alltrials.csv")
 %>% 
   mutate(tau_l = log(tau)) %>% 
   left_join(doug, by = c("Account" = "uuid")) 
-
-
 
 
 # cor.test(wmgrid_limited$tau, wmgrid_limited$Inatt_DSM)
@@ -234,13 +247,9 @@ lines(density(S,na.rm=T))
 rug(jitter(S))
 qqPlot(S, main='Normal QQ plot of Tau Lv 5') > par(mfrow=c(1,1))
 
-
-
 hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==3]), breaks = 40)
 hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==4]), breaks = 40)
 hist(log(wmgrid_limited$tau[wmgrid_limited$Problem.Level==5]), breaks = 40)
-
-
 
 tauresidi <- lm(tau ~ Problem.Level, wmgrid_limited)
 
@@ -250,7 +259,6 @@ hist(tauresidi, breaks = 30)
 # min(tauresidi)
 tauresidi <- tauresidi + 6130
 hist(tauresidi, breaks = 30)
-
 
 #tauresidi <- 1/tauresidi
 #hist(tauresidi, breaks = 30)
@@ -264,8 +272,6 @@ hist(tauresidi, breaks = 30)
 wmgrid_limited$tau_res <- tauresidi
 
 summary(lm(tau_res ~ Inatt_DSM, wmgrid_limited))
-
-
 summary(lm(tau ~ Problem.Level, wmgrid_limited))
 
 
