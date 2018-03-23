@@ -34,3 +34,7 @@ library(haven)
 write_sav(fullspss, "MASTER_UBER_willwork.sav")
 
 #write_csv(fullspss, "fullspssfile.csv")
+# fuck this shit didn't work
+write_csv(x, "I_am_a_failure.csv")
+
+
